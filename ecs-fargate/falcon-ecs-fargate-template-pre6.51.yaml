@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Sample template for creating a single container ECS Task Definition for a Fargate Application with Falcon Container sensor included.
+Parameters:
+  AppName:
+    Type: String
+    Description: Logical name for application / container
+  AppImagePath:
+    Type: String
+    Description: The full container image path including tag value for the application container image
+  AppEntrypoint:
+    Type: String
+    Description: The entrypoint override to use within the application container image. (Falcon required binaries and "/bin/sh", "-c", are automatically inserted before the user specified entrypoint file)
+    Default: "/entrypoint.sh"
+  AppCmd:
+    Type: String
+    Description: The command override to use within the application container image. (Optional)
+    Default: ""
+  AppContainerPort:
+    Type: String
+    Description: Container port to expose
+    Default: 8080
+  TaskCPU:
+    Type: String
+    Description: Amount of CPU to allocate to the task definition
+    Default: 256
+    AllowedValues:
+      - 256
+      - 512
+      - 1024
+      - 2048
+      - 4096
+  TaskMemory:
+    Type: String
+    Description: Amount of Memory to allocate to task definition
+    Default: 512
+    AllowedValues:
+      - 512
+      - 1024
+      - 2048
+      - 3072
+      - 4096
+      - 5120
+      - 6144
+      - 7168
+      - 8192
+      - 9216
+      - 10240
+      - 11264
+      - 12288
+      - 13312
+      - 14336
+      - 15360
+      - 16384
+      - 17408
+      - 18432
+      - 19456
+      - 20480
+      - 21504
+      - 22528
+      - 23552
+      - 24576
+      - 25600
+      - 26624
+      - 27648
+      - 28672
+      - 29696
+      - 30720
+  FalconImagePath:
+    Type: String
+    Description: The full container image path including tag value for the Falcon Container sensor image
+  FalconCID:
+    Type: String
+    Description: CrowdStrike Customer ID (CID) value
+  LogGroupName:
+    Type: String
+    Description: Log group name
+
+Resources:
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: crowdstrike-falcon-init-container
+          User: 0:0
+          MountPoints:
+            - ContainerPath: "/tmp/CrowdStrike"
+              ReadOnly: false
+              SourceVolume: "crowdstrike-falcon-volume"
+          Image: !Ref FalconImagePath
+          EntryPoint:
+            - /bin/bash
+            - "-c"
+            - chmod u+rwx /tmp/CrowdStrike && mkdir /tmp/CrowdStrike/rootfs && cp -r /bin /etc /lib64 /usr /entrypoint-ecs.sh /tmp/CrowdStrike/rootfs && chmod -R a=rX /tmp/CrowdStrike
+          Essential: false
+        - Name: !Ref AppName
+          Image: !Ref AppImagePath
+          EntryPoint:
+            - "/tmp/CrowdStrike/rootfs/lib64/ld-linux-x86-64.so.2"
+            - "--library-path"
+            - "/tmp/CrowdStrike/rootfs/lib64"
+            - "/tmp/CrowdStrike/rootfs/bin/bash"
+            - "/tmp/CrowdStrike/rootfs/entrypoint-ecs.sh"
+            - !Ref AppEntrypoint
+          Command:
+            - !Ref AppCmd
+          Essential: true
+          DependsOn:
+            - ContainerName: crowdstrike-falcon-init-container
+              Condition: COMPLETE
+          PortMappings:
+            - ContainerPort: !Ref AppContainerPort
+              Protocol: tcp
+          Environment:
+            - Name: FALCONCTL_OPTS
+              Value: !Sub "--cid=${FalconCID}"
+          MountPoints:
+            - ContainerPath: "/tmp/CrowdStrike"
+              ReadOnly: false
+              SourceVolume: "crowdstrike-falcon-volume"
+          LinuxParameters:
+            Capabilities:
+              Add:
+                - SYS_PTRACE
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: !Ref AppName
+      Volumes:
+        - Name: "crowdstrike-falcon-volume"
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !Ref ExecutionRole
+      Cpu: !Ref TaskCPU
+      Memory: !Ref TaskMemory
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      RequiresCompatibilities:
+        - FARGATE
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${AppName}"

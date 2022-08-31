@@ -1,0 +1,13 @@
+[
+  "ECSClusterName=<ECS-Cluster-Name>",
+  "CID=<Your-CID-Value>",
+  "FalconImagePath=<ImageURIforFalconSensor>",
+  "TRACE=",
+  "TAGS=ecs-ec2-daemon,ecs-appname-1",
+  "APD=",
+  "APH=",
+  "APP=",
+  "PROVISIONINGTOKEN=",
+  "FEATURE=",
+  "BACKEND=bpf"
+]

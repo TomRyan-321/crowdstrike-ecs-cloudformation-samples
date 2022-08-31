@@ -1,1 +1,0 @@
-# crowdstrike-ecs-cloudformation-samples
