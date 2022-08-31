@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Sample template for launching Falcon Sensor for Linux container image as an ECS Daemon Service to a cluster
+Parameters:
+  ECSClusterName:
+    Type: String
+    Description: Cluster name to deploy Falcon Sensor for Linux as a Daemon Service
+  CID:
+    Type: String
+    Description: CrowdStrike Customer ID (CID) value
+  FalconImagePath:
+    Type: String
+    Description: The ECR image path including tag value for the Falcon Sensor for Linux container image
+  APD:
+    Type: String
+    Description: App Proxy Disable (APD)
+  APH:
+    Type: String
+    Description: App Proxy Host (APH)
+  APP:
+    Type: String
+    Description: App Proxy Port (APP)
+  TRACE:
+    Type: String
+    Description: Set Trace Level
+    Default: none
+    AllowedValues:
+      - none
+      - err
+      - warn
+      - info
+      - debug
+  FEATURE:
+    Type: String
+    Description: Sensor Feature Options
+  MESSAGELOG:
+    Type: String
+    Description: Enable message log
+  TAGS:
+    Type: String
+    Description: Comma separated list of tags for sensor grouping
+  PROVISIONINGTOKEN:
+    Type: String
+    Description: Provisioning token value
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Mandatory Fields
+        Parameters:
+          - ECSClusterName
+          - CID
+          - FalconImagePath
+      - Label:
+          default: Optional falconctl install options
+        Parameters:
+          - TAGS
+          - PROVISIONINGTOKEN
+          - TRACE
+          - APD
+          - APH
+          - APP
+          - FEATURE
+          - MESSAGELOG
+
+Resources:
+  FalconECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: crowdstrike-falcon-init-container
+          MemoryReservation: 128
+          MountPoints:
+            - ContainerPath: "/opt/"
+              SourceVolume: "falconstore-dir"
+          Image: !Ref FalconImagePath
+          EntryPoint:
+            - "/bin/bash"
+          Command:
+            - "-c"
+            - "mkdir -p /opt/CrowdStrike && touch /opt/CrowdStrike/falconstore"
+          Essential: false
+        - Name: crowdstrike-falcon-node-sensor
+          Image: !Ref FalconImagePath
+          Essential: true
+          DependsOn:
+            - ContainerName: crowdstrike-falcon-init-container
+              Condition: COMPLETE
+          Environment:
+            - Name: FALCONCTL_OPT_CID
+              Value: !Ref CID
+            - Name: FALCONCTL_OPT_APD
+              Value: !Ref APD
+            - Name: FALCONCTL_OPT_APH
+              Value: !Ref APH
+            - Name: FALCONCTL_OPT_APP
+              Value: !Ref APP
+            - Name: FALCONCTL_OPT_TRACE
+              Value: !Ref TRACE
+            - Name: FALCONCTL_OPT_TAGS
+              Value: !Ref TAGS
+            - Name: FALCONCTL_OPT_FEATURE
+              Value: !Ref FEATURE
+            - Name: FALCONCTL_OPT_MESSAGE_LOG
+              Value: !Ref MESSAGELOG
+            - Name: FALCONCTL_OPT_PROVISIONING_TOKEN
+              Value: !Ref PROVISIONINGTOKEN
+          MemoryReservation: 128
+          MountPoints:
+            - ContainerPath: "/opt/CrowdStrike/falconstore"
+              SourceVolume: "falconstore"
+          Privileged: true
+          ReadonlyRootFilesystem: false
+          User: "0"
+      Volumes:
+        - Name: "falconstore-dir"
+          Host:
+            SourcePath: "/opt/"
+        - Name: "falconstore"
+          Host:
+            SourcePath: "/opt/CrowdStrike/falconstore"
+      NetworkMode: host
+      IpcMode: host
+      PidMode: host
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      RequiresCompatibilities:
+        - EC2
+
+  FalconECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSClusterName
+      SchedulingStrategy: DAEMON
+      LaunchType: EC2
+      ServiceName: crowdstrike-falcon-node-daemon
+      TaskDefinition: !Ref FalconECSTaskDefinition
