@@ -12,12 +12,15 @@ Parameters:
     Description: The ECR image path including tag value for the Falcon Sensor for Linux container image
   APD:
     Type: String
+    Default: ""
     Description: App Proxy Disable (APD)
   APH:
     Type: String
+    Default: ""
     Description: App Proxy Host (APH)
   APP:
     Type: String
+    Default: ""
     Description: App Proxy Port (APP)
   TRACE:
     Type: String
@@ -31,15 +34,19 @@ Parameters:
       - debug
   FEATURE:
     Type: String
+    Default: ""
     Description: Sensor Feature Options
   MESSAGELOG:
     Type: String
+    Default: ""
     Description: Enable message log
   TAGS:
     Type: String
+    Default: "ecs-ec2-daemon"
     Description: Comma separated list of tags for sensor grouping
   PROVISIONINGTOKEN:
     Type: String
+    Default: ""
     Description: Provisioning token value
 
 Metadata:
