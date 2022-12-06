@@ -1,0 +1,13 @@
+[
+  "ECSClusterName=your-ecs-cluster-name",
+  "CID=12345678091234567809123456780912-00",
+  "FalconImagePath=123345678.dkr.ecr.ap-southeast-1.amazonaws.com/falcon-sensor:6.46.0-14306.falcon-linux.x86_64.Release.US-2",
+  "Trace=warn",
+  "TAGS=ecs-ec2-daemon,ecs-appname-1",
+  "APD=",
+  "APH=",
+  "APP=",
+  "PROVISIONINGTOKEN=",
+  "FEATURE=",
+  "MESSAGELOG="
+]
