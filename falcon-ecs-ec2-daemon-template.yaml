@@ -48,6 +48,13 @@ Parameters:
     Type: String
     Default: ""
     Description: Provisioning token value
+  BACKEND:
+    Type: String
+    Default: kernel
+    Description: Backend option, allowed values "kernel" and "bpf"
+    AllowedValues:
+      - bpf
+      - kernel
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -69,6 +76,7 @@ Metadata:
           - APP
           - FEATURE
           - MESSAGELOG
+          - BACKEND
 
 Resources:
   FalconECSTaskDefinition:
@@ -112,6 +120,8 @@ Resources:
               Value: !Ref MESSAGELOG
             - Name: FALCONCTL_OPT_PROVISIONING_TOKEN
               Value: !Ref PROVISIONINGTOKEN
+            - NAME: FALCONCTL_OPT_BACKEND
+              Value: !Ref BACKEND
           MemoryReservation: 128
           MountPoints:
             - ContainerPath: "/opt/CrowdStrike/falconstore"

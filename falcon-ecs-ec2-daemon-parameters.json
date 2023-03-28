@@ -9,5 +9,6 @@
   "APP=",
   "PROVISIONINGTOKEN=",
   "FEATURE=",
-  "MESSAGELOG="
+  "MESSAGELOG=",
+  "BACKEND=kernel"
 ]
