@@ -83,23 +83,23 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Name: crowdstrike-falcon-init-container
+        - Name: init-falconstore
           MemoryReservation: 128
           MountPoints:
-            - ContainerPath: "/opt/"
-              SourceVolume: "falconstore-dir"
+            - ContainerPath: /host_opt
+              SourceVolume: falconstore-dir
           Image: !Ref FalconImagePath
           EntryPoint:
             - "/bin/bash"
           Command:
-            - "-c"
-            - "mkdir -p /opt/CrowdStrike && touch /opt/CrowdStrike/falconstore"
+            - '-c' 
+            - 'if [ -x "/opt/CrowdStrike/falcon-daemonset-init" ]; then echo "Running falcon-daemonset-init -i" ; /opt/CrowdStrike/falcon-daemonset-init -i ; else if [ -d "/host_opt/CrowdStrike/falconstore" ] ; then echo "Re-creating /opt/CrowdStrike/falconstore as it is a directory instead of a file"; rm -rf /host_opt/CrowdStrike/falconstore; fi; mkdir -p /host_opt/CrowdStrike && touch /host_opt/CrowdStrike/falconstore; fi'
           Essential: false
         - Name: crowdstrike-falcon-node-sensor
           Image: !Ref FalconImagePath
           Essential: true
           DependsOn:
-            - ContainerName: crowdstrike-falcon-init-container
+            - ContainerName: init-falconstore
               Condition: COMPLETE
           Environment:
             - Name: FALCONCTL_OPT_CID
@@ -124,23 +124,22 @@ Resources:
               Value: !Ref BACKEND
           MemoryReservation: 128
           MountPoints:
-            - ContainerPath: "/opt/CrowdStrike/falconstore"
-              SourceVolume: "falconstore"
+            - ContainerPath: /opt/CrowdStrike/falconstore
+              SourceVolume: falconstore
           Privileged: true
           ReadonlyRootFilesystem: false
-          User: "0"
+          User: 0
       Volumes:
-        - Name: "falconstore-dir"
+        - Name: falconstore-dir
           Host:
             SourcePath: "/opt/"
-        - Name: "falconstore"
+        - Name: falconstore
           Host:
-            SourcePath: "/opt/CrowdStrike/falconstore"
+            SourcePath: /opt/CrowdStrike/falconstore
       NetworkMode: host
       IpcMode: host
       PidMode: host
       RuntimePlatform:
-        CpuArchitecture: X86_64
         OperatingSystemFamily: LINUX
       RequiresCompatibilities:
         - EC2
