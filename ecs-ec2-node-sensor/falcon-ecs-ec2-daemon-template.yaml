@@ -10,6 +10,43 @@ Parameters:
   FalconImagePath:
     Type: String
     Description: The ECR image path including tag value for the Falcon Sensor for Linux container image
+  SensorMemoryReservation:
+    Type: String
+    Description: Memory Reservation for the Falcon Sensor
+    Default: 512
+    AllowedValues:
+      - 512
+      - 1024
+      - 2048
+      - 3072
+      - 4096
+      - 5120
+      - 6144
+      - 7168
+      - 8192
+      - 9216
+      - 10240
+      - 11264
+      - 12288
+      - 13312
+      - 14336
+      - 15360
+      - 16384
+      - 17408
+      - 18432
+      - 19456
+      - 20480
+      - 21504
+      - 22528
+      - 23552
+      - 24576
+      - 25600
+      - 26624
+      - 27648
+      - 28672
+      - 29696
+      - 30720
+
   APD:
     Type: String
     Default: ""
@@ -61,6 +98,7 @@ Metadata:
           - ECSClusterName
           - CID
           - FalconImagePath
+          - SensorMemoryReservation
       - Label:
           default: Optional falconctl install options
         Parameters:
@@ -121,7 +159,7 @@ Resources:
               Value: !Ref PROVISIONINGTOKEN
             - Name: FALCONCTL_OPT_BACKEND
               Value: !Ref BACKEND
-          MemoryReservation: 512
+          MemoryReservation: !Ref SensorMemoryReservation
           MountPoints:
             - ContainerPath: /opt/CrowdStrike/falconstore
               SourceVolume: falconstore

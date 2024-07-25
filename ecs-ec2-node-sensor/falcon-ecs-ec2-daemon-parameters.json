@@ -2,6 +2,7 @@
   "ECSClusterName=<ECS-Cluster-Name>",
   "CID=<Your-CID-Value>",
   "FalconImagePath=<ImageURIforFalconSensor>",
+  "SensorMemoryReservation=512",
   "TRACE=",
   "TAGS=ecs-ec2-daemon,ecs-appname-1",
   "APD=",
